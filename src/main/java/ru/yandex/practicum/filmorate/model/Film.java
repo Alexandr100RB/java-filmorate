@@ -6,10 +6,6 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-/**
- * Film.
- */
-
 @Data
 @Builder
 public class Film {
