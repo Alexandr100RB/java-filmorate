@@ -6,19 +6,16 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-/**
- * Film.
- */
-
 @Data
-@Builder
-public class Film {
+@Builder(toBuilder = true)
+public class User {
     Long id;
+    @Email
     @NotBlank
+    String email;
+    @NotBlank
+    String login;
     String name;
-    @Size(max = 200)
-    String description;
-    LocalDate releaseDate;
-    @Positive
-    Integer duration;
+    @PastOrPresent
+    LocalDate birthday;
 }
