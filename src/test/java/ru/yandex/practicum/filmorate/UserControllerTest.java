@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,6 +44,7 @@ class UserControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить пользователя")
     void testCreateValidUser() {
         mockMvc.perform(post("/users")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -52,6 +54,7 @@ class UserControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить пользователя с некорректной датой рождения")
     void testCreateUserWithIncorrectBirthday() {
         validUser.setBirthday(LocalDate.now().plusDays(2));
         mockMvc.perform(post("/users")
@@ -62,6 +65,7 @@ class UserControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить пользователя с некорректном логином")
     void testCreateUserWithIncorrectLogin() {
         validUser.setLogin("");
         mockMvc.perform(post("/users")
@@ -72,6 +76,7 @@ class UserControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить пользователя с некорректной почтой")
     void testCreateUserWithIncorrectEmail() {
         validUser.setEmail("IncorrectEmail.com");
         mockMvc.perform(post("/users")

@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -44,6 +45,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить фильм")
     void testCreateValidFilm() {
         mockMvc.perform(post("/films")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -53,6 +55,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Получить список фильмов")
     void testGetAllFilms() {
         mockMvc.perform(post("/films")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -64,6 +67,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Получить пустой список фильмов")
     void testGetAllFilmsWithNoFilmsAdded() {
         mockMvc.perform(get("/films"))
                 .andExpect(status().isOk());
@@ -72,6 +76,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить фильм с отрицательной длительностью")
     void testCreateFilmWithNegativeDuration() {
         validFilm.setDuration(-1);
         mockMvc.perform(post("/films")
@@ -82,6 +87,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить фильм с длинным описанием")
     void testCreateFilmWithBigDescription() {
         validFilm.setDescription("a".repeat(300));
         mockMvc.perform(post("/films")
@@ -92,6 +98,7 @@ public class FilmControllerTest {
 
     @SneakyThrows
     @Test
+    @DisplayName("Добавить фильм с пустым названием")
     void testCreateFilmWithBlankName() {
         validFilm.setName("");
         mockMvc.perform(post("/films")

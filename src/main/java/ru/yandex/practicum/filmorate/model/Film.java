@@ -8,21 +8,18 @@ import lombok.Data;
 
 import java.time.LocalDate;
 
-/**
- * Film.
- */
 @Getter
 @Setter
 
 @Data
 @Builder
 public class Film {
-    Long id;
+    private Long id;
     @NotBlank
-    String name;
+    private String name;
     @Size(max = 200)
-    String description;
-    LocalDate releaseDate;
+    private String description;
+    private LocalDate releaseDate;
     @Positive
-    Integer duration;
+    private Integer duration;
 }
