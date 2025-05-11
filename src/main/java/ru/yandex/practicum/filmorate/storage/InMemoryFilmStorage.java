@@ -1,11 +1,11 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import jakarta.validation.Valid;
-import jakarta.validation.ValidationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestBody;
 import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.time.LocalDate;
@@ -32,7 +32,7 @@ public class InMemoryFilmStorage implements FilmStorage {
             return film;
         }
         log.warn("Указана некорректная дата релиза {}", film.getReleaseDate());
-        throw new jakarta.validation.ValidationException("Указана некорректная дата релиза");
+        throw new ValidationException("Указана некорректная дата релиза");
     }
 
     @Override
