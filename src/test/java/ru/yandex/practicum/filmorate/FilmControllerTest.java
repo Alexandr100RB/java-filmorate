@@ -12,6 +12,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.controller.FilmController;
 import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.FilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryFilmStorage;
+import ru.yandex.practicum.filmorate.storage.InMemoryUserStorage;
+import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 
@@ -30,7 +36,7 @@ public class FilmControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    Film validFilm;
+    private Film validFilm;
 
     @BeforeEach
     void beforeEach() {
@@ -40,7 +46,11 @@ public class FilmControllerTest {
                 .releaseDate(LocalDate.of(2001, 5, 12))
                 .duration(100)
                 .build();
-        controller = new FilmController();
+        FilmStorage filmStorage = new InMemoryFilmStorage();
+        UserStorage userStorage = new InMemoryUserStorage();
+        UserService userService = new UserService(userStorage);
+        FilmService filmService = new FilmService(filmStorage, userService);
+        controller = new FilmController(filmService);
     }
 
     @SneakyThrows
