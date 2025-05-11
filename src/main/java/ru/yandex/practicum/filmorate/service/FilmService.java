@@ -66,6 +66,7 @@ public class FilmService {
         log.debug("Выведены самые популярные фильмы");
         return filmStorage.findAll()
                 .stream()
+                .sorted(Film.compareByLikes())
                 .limit(count)
                 .toList();
     }

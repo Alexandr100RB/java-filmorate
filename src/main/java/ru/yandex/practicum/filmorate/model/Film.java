@@ -7,8 +7,10 @@ import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import ru.yandex.practicum.filmorate.model.Film;
 
 @Getter
 @Setter
@@ -30,5 +32,10 @@ public class Film {
             return new HashSet<>();
         }
         return likes;
+    }
+
+    public static Comparator<Film> compareByLikes() {
+        Comparator<Film> sortedFilms = Comparator.comparingInt(film -> film.getLikes() != null ? film.getLikes().size() : 0);
+        return sortedFilms.reversed();
     }
 }
