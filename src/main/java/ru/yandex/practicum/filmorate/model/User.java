@@ -21,6 +21,7 @@ public class User {
     @PastOrPresent
     private LocalDate birthday;
     Set<Long> friends;
+
     public Set<Long> getFriends() {
         if (friends == null) {
             return new HashSet<>();
