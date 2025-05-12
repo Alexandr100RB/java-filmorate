@@ -20,7 +20,7 @@ public class User {
     private String name;
     @PastOrPresent
     private LocalDate birthday;
-    Set<Long> friends;
+    private Set<Long> friends;
 
     public Set<Long> getFriends() {
         if (friends == null) {

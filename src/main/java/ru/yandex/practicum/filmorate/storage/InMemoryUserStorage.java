@@ -23,7 +23,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User create(@Valid @RequestBody User user) {
+    public User create(@RequestBody User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
@@ -34,7 +34,7 @@ public class InMemoryUserStorage implements UserStorage {
     }
 
     @Override
-    public User update(@Valid @RequestBody User user) {
+    public User update(@RequestBody User user) {
         if (user.getId() == null) {
             log.warn("Не указан id при обновлении пользователя");
             throw new ValidationException("Не указан id при обновлении пользователя");

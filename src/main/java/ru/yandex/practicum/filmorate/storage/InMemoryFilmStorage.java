@@ -24,7 +24,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film create(@Valid @RequestBody Film film) {
+    public Film create(@RequestBody Film film) {
         if (isReleaseDateCorrect(film)) {
             film.setId(getNewId());
             films.put(film.getId(), film);
@@ -36,7 +36,7 @@ public class InMemoryFilmStorage implements FilmStorage {
     }
 
     @Override
-    public Film update(@Valid @RequestBody Film film) {
+    public Film update(@RequestBody Film film) {
         if (film.getId() == null) {
             log.warn("Не указан id при обновлении фильма");
             throw new jakarta.validation.ValidationException("Не указан id при обновлении фильма");

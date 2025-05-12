@@ -24,7 +24,7 @@ public class Film {
     private LocalDate releaseDate;
     @Positive
     private Integer duration;
-    Set<Long> likes;
+    private Set<Long> likes;
 
     public Set<Long> getLikes() {
         if (likes == null) {
