@@ -48,6 +48,7 @@ Template repository for Filmorate project.
 
 ### Получить id и название 10 самых популярных фильмов
 
+```sql
 SELECT f.id,
        f.name,
        COUNT(l.user_id) AS likes
@@ -57,3 +58,4 @@ GROUP BY f.id,
          f.name
 ORDER BY likes DESC
 LIMIT 10;
+```
