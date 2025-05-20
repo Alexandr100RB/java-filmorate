@@ -97,7 +97,7 @@ public class FilmDbStorageTest {
     @Test
     void testFindFilmById() {
         Film film = filmStorage.create(Film.builder()
-                .id(8L)
+                .id(5L)
                 .name("Test name")
                 .description("Test description")
                 .releaseDate(LocalDate.parse("1980-05-21"))
@@ -106,7 +106,7 @@ public class FilmDbStorageTest {
                 .build());
 
         assertNotNull(film);
-        assertEquals(8L, film.getId());
+        assertEquals(5L, film.getId());
     }
 
     @Test
