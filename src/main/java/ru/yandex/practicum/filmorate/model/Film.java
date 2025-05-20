@@ -35,7 +35,6 @@ public class Film {
         values.put("release_date", releaseDate.toString());
         values.put("duration", duration);
         values.put("rating_id", mpa == null ? null : mpa.getId());
-        log.info("hdhsjfsdjf -- " + mpa.getId());
         return values;
     }
 }
