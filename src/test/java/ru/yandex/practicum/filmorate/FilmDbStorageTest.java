@@ -32,7 +32,7 @@ public class FilmDbStorageTest {
 
     @Test
     void testCreateFilm() {
-        Film film =filmStorage.create(Film.builder()
+        Film film = filmStorage.create(Film.builder()
                 .id(1L)
                 .name("Test name")
                 .description("Test description")
