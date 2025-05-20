@@ -16,7 +16,6 @@ import ru.yandex.practicum.filmorate.storage.MpaDbStorage;
 import ru.yandex.practicum.filmorate.storage.UserDbStorage;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
