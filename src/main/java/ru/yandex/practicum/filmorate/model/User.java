@@ -1,31 +1,39 @@
 package ru.yandex.practicum.filmorate.model;
 
-import jakarta.validation.constraints.*;
-import lombok.Builder;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.Email;
+import lombok.*;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
-@Data
 @Builder(toBuilder = true)
+@AllArgsConstructor
+@NoArgsConstructor
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode()
 public class User {
     private Long id;
-    @Email
-    @NotBlank
+    @Email(message = "E-mail должен содержать '@'.")
     private String email;
-    @NotBlank
     private String login;
     private String name;
-    @PastOrPresent
     private LocalDate birthday;
-    private Set<Long> friends;
+    @JsonIgnore
+    private Set<Long> friends = new HashSet<>();
 
-    public Set<Long> getFriends() {
-        if (friends == null) {
-            return new HashSet<>();
-        }
-        return friends;
+    public Map<String, Object> toMap() {
+        Map<String, Object> values = new HashMap<>();
+        values.put("user_id", id);
+        values.put("email", email);
+        values.put("login", login);
+        values.put("name", name);
+        values.put("birthday", birthday.toString());
+        return values;
     }
 }
