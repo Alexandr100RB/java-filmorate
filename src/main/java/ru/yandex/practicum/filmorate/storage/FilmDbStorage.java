@@ -131,6 +131,28 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public Film findFilmByName(String name) {
+        String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
+                "FROM films AS f " +
+                "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
+                "WHERE f.film_id = :film_id;";
+        return jdbc.query(sql, new MapSqlParameterSource("name", name), rs -> {
+            Film film = null;
+            while (rs.next()) {
+                if (film == null) {
+                    film = mapRowToFilm(rs, rs.getRow());
+                }
+                Integer genreId = rs.getInt("genre_id");
+                if (!rs.wasNull())
+                    film.getGenres().add(new Genre(genreId, rs.getString("genre_name")));
+            }
+            return film;
+        });
+    }
+
+    @Override
     public void deleteFilmById(Long filmId) {
         String sql = "DELETE FROM films WHERE film_id = :film_id;";
         jdbc.update(sql, new MapSqlParameterSource("film_id", filmId));

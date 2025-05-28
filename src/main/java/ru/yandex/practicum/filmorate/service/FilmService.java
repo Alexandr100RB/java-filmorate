@@ -120,4 +120,12 @@ public class FilmService {
             throw new ValidationException("Продолжительность фильма не может быть меньше нуля: " + film);
         }
     }
+
+    public Collection<Film> getAllFilmsSorted() {
+        return filmStorage.getPopularFilms(filmStorage.findAll().size());
+    }
+
+    public Film findFilmByName(String query) {
+        return filmStorage.findFilmByName(query);
+    }
 }

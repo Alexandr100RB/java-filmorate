@@ -13,6 +13,8 @@ public interface FilmStorage {
 
     Film findFilmById(Long filmId);
 
+    Film findFilmByName(String name);
+
     void deleteFilmById(Long filmId);
 
     void addLikeByUser(Long filmId, Long userId);
