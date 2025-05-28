@@ -114,4 +114,12 @@ public class UserService {
             user.setName(user.getLogin());
         }
     }
+
+    public void deleteUserById(Long id) {
+        if (!userStorage.isUserExists(id)) {
+            throw new DataNotFoundException("Пользователь с id " + id + "не найден");
+        }
+        userStorage.deleteUserById(id);
+        log.debug("Пользователь {} удалён", id);
+    }
 }
