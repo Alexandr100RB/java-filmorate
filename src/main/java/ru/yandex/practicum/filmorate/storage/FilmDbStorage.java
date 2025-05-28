@@ -11,15 +11,13 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 @Primary
@@ -197,4 +195,27 @@ public class FilmDbStorage implements FilmStorage {
         String sql = "SELECT COUNT(*) FROM films WHERE film_id = :film_id;";
         return 1 == jdbc.queryForObject(sql, new MapSqlParameterSource("film_id", filmId), Integer.class);
     }
+
+    @Override
+    public List<Like> getLikesForFilmsLikedByUser(long userId) {
+        String likedByUserSql = "SELECT film_id FROM likes WHERE user_id=(:id)";
+        String usersWithSimilarLikesSql = "SELECT user_id FROM likes WHERE film_id IN (:ids)";
+        String filmsLikedBySimilarUsersSql = "SELECT * FROM likes WHERE user_id IN (:ids)";
+        SqlParameterSource parameters = new MapSqlParameterSource("id", userId);
+        List<Long> filmsLikedByUser = jdbc.queryForList(likedByUserSql, parameters, Long.class);
+        parameters = new MapSqlParameterSource("ids", filmsLikedByUser);
+        List<Long> usersWithSimilarLikes = jdbc.queryForList(usersWithSimilarLikesSql, parameters, Long.class);
+        parameters = new MapSqlParameterSource("ids", usersWithSimilarLikes);
+
+        return jdbc.query(filmsLikedBySimilarUsersSql, parameters, (rs, rowNumber) -> createLike(rs));
+    }
+
+    private Like createLike(ResultSet rs) throws SQLException {
+        return Like.builder()
+                .userId(rs.getLong("user_id"))
+                .filmId(rs.getLong("film_id"))
+                .build();
+    }
+
+
 }
