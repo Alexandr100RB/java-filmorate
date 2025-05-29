@@ -183,6 +183,57 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+        String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
+                "FROM (SELECT l.film_id, COUNT(*) AS countOfLikes " +
+                "      FROM likes l " +
+                "      JOIN films f ON l.film_id = f.film_id " +
+                "      LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
+                "      WHERE 1=1 " +
+                (genreId != null ? " AND fg.genre_id = :genreId " : "") +
+                (year != null ? " AND EXTRACT(YEAR FROM f.release_date) = :year " : "") +
+                "      GROUP BY l.film_id " +
+                "      ORDER BY countOfLikes DESC LIMIT :count) AS p " +
+                "JOIN films AS f ON p.film_id = f.film_id " +
+                "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
+                (genreId != null ? " WHERE fg.genre_id = :genreId " : "") +
+                " ORDER BY p.countOfLikes DESC, f.film_id";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("count", count);
+
+        if (genreId != null) {
+            params.addValue("genreId", genreId);
+        }
+        if (year != null) {
+            params.addValue("year", year);
+        }
+
+        return jdbc.query(sql, params, rs -> {
+            Collection<Film> films = new LinkedList<>();
+            Film film = null;
+            while (rs.next()) {
+                if (film == null || !film.getId().equals(rs.getLong("film_id"))) {
+                    if (film != null) {
+                        films.add(film);
+                    }
+                    film = mapRowToFilm(rs, rs.getRow());
+                }
+                Integer currentGenreId = rs.getInt("genre_id");
+                if (!rs.wasNull()) {
+                    film.getGenres().add(new Genre(currentGenreId, rs.getString("genre_name")));
+                }
+            }
+            if (film != null) {
+                films.add(film);
+            }
+            return films;
+        });
+    }
+
+    @Override
     public void removeLike(Long filmId, Long userId) {
         String sql = "DELETE FROM likes WHERE user_id = :user_id AND film_id = :film_id;";
 

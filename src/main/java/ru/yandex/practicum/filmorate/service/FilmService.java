@@ -103,6 +103,11 @@ public class FilmService {
         return filmStorage.getPopularFilms(sizeOfList);
     }
 
+    public Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+        log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
+        return filmStorage.getMostPopularFilms(count, genreId, year);
+    }
+
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
             throw new ValidationException("Название фильма не может быть пустым : " + film);
