@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.storage;
 import ru.yandex.practicum.filmorate.model.Film;
 
 import java.util.Collection;
+import java.util.List;
 
 public interface FilmStorage {
     Film create(Film film);
@@ -23,5 +24,5 @@ public interface FilmStorage {
 
     boolean isFilmExists(Long filmId);
 
-    Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year);
+    List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year);
 }

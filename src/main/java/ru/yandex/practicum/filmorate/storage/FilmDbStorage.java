@@ -16,9 +16,12 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -183,7 +186,7 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
-    public Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+    public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
         String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
                 "FROM (SELECT l.film_id, COUNT(*) AS countOfLikes " +
                 "      FROM likes l " +
@@ -211,26 +214,24 @@ public class FilmDbStorage implements FilmStorage {
             params.addValue("year", year);
         }
 
-        return jdbc.query(sql, params, rs -> {
-            Collection<Film> films = new LinkedList<>();
-            Film film = null;
-            while (rs.next()) {
-                if (film == null || !film.getId().equals(rs.getLong("film_id"))) {
-                    if (film != null) {
-                        films.add(film);
-                    }
-                    film = mapRowToFilm(rs, rs.getRow());
-                }
-                Integer currentGenreId = rs.getInt("genre_id");
-                if (!rs.wasNull()) {
-                    film.getGenres().add(new Genre(currentGenreId, rs.getString("genre_name")));
-                }
+        List<Film> filmsWithGenres = jdbc.query(sql, params, (rs, rowNum) -> {
+            Film film = mapRowToFilm(rs, rowNum);
+            Integer genreIdFromRs = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                film.getGenres().add(new Genre(genreIdFromRs, rs.getString("genre_name")));
             }
-            if (film != null) {
-                films.add(film);
-            }
-            return films;
+            return film;
         });
+
+        Map<Long, Film> filmMap = new LinkedHashMap<>();
+        for (Film film : filmsWithGenres) {
+            filmMap.merge(film.getId(), film, (existing, current) -> {
+                existing.getGenres().addAll(current.getGenres());
+                return existing;
+            });
+        }
+
+        return new ArrayList<>(filmMap.values());
     }
 
     @Override

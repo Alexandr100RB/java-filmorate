@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -103,7 +104,7 @@ public class FilmService {
         return filmStorage.getPopularFilms(sizeOfList);
     }
 
-    public Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+    public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
         return filmStorage.getMostPopularFilms(count, genreId, year);
     }
 
