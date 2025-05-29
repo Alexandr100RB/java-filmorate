@@ -14,6 +14,7 @@ import ru.yandex.practicum.filmorate.storage.UserStorage;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -109,6 +110,10 @@ public class FilmService {
 
     public Collection<Film> getPopularFilms(Integer sizeOfList) {
         return filmStorage.getPopularFilms(sizeOfList);
+    }
+
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
     }
 
     private void validateFilm(Film film) {

@@ -16,9 +16,12 @@ import ru.yandex.practicum.filmorate.model.Mpa;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 @Repository
@@ -193,6 +196,45 @@ public class FilmDbStorage implements FilmStorage {
         parameterSource.addValue("user_id", userId);
         parameterSource.addValue("film_id", filmId);
         jdbc.update(sql, parameterSource);
+    }
+
+    @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
+                "       f.rating_id, mpa.name AS mpa_rating_name, " +
+                "       g.genre_id, g.name AS genre_name " +
+                "FROM films f " +
+                "INNER JOIN likes l1 ON f.film_id = l1.film_id AND l1.user_id = :userId " +
+                "INNER JOIN likes l2 ON f.film_id = l2.film_id AND l2.user_id = :friendId " +
+                "INNER JOIN likes all_likes ON f.film_id = all_likes.film_id " +
+                "LEFT JOIN mpa_rating mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres g ON fg.genre_id = g.genre_id " +
+                "GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.rating_id, mpa.name, g.genre_id, g.name " +
+                "ORDER BY COUNT(all_likes.user_id) DESC";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("friendId", friendId);
+
+        List<Film> filmsWithGenres = jdbc.query(sql, params, (rs, rowNum) -> {
+            Film film = mapRowToFilm(rs, rowNum);
+            int genreId = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                film.getGenres().add(new Genre(genreId, rs.getString("genre_name")));
+            }
+            return film;
+        });
+
+        Map<Long, Film> filmMap = new LinkedHashMap<>();
+        for (Film film : filmsWithGenres) {
+            filmMap.merge(film.getId(), film, (existing, current) -> {
+                existing.getGenres().addAll(current.getGenres());
+                return existing;
+            });
+        }
+
+        return new ArrayList<>(filmMap.values());
     }
 
     @Override
