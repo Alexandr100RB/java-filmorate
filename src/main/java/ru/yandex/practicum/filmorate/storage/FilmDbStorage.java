@@ -198,16 +198,12 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Like> getLikesForFilmsLikedByUser(long userId) {
-        String likedByUserSql = "SELECT film_id FROM likes WHERE user_id=(:id)";
-        String usersWithSimilarLikesSql = "SELECT user_id FROM likes WHERE film_id IN (:ids)";
-        String filmsLikedBySimilarUsersSql = "SELECT * FROM likes WHERE user_id IN (:ids)";
-        SqlParameterSource parameters = new MapSqlParameterSource("id", userId);
-        List<Long> filmsLikedByUser = jdbc.queryForList(likedByUserSql, parameters, Long.class);
-        parameters = new MapSqlParameterSource("ids", filmsLikedByUser);
-        List<Long> usersWithSimilarLikes = jdbc.queryForList(usersWithSimilarLikesSql, parameters, Long.class);
-        parameters = new MapSqlParameterSource("ids", usersWithSimilarLikes);
+        String sql = "SELECT * FROM likes WHERE user_id IN" +
+                " (SELECT user_id FROM likes WHERE film_id IN " +
+                "(SELECT film_id FROM likes WHERE user_id=(:id)))";
 
-        return jdbc.query(filmsLikedBySimilarUsersSql, parameters, (rs, rowNumber) -> createLike(rs));
+        return jdbc.query(sql, new MapSqlParameterSource("id", userId),
+                (rs, rowNumber) -> createLike(rs));
     }
 
     private Like createLike(ResultSet rs) throws SQLException {
@@ -216,6 +212,4 @@ public class FilmDbStorage implements FilmStorage {
                 .filmId(rs.getLong("film_id"))
                 .build();
     }
-
-
 }

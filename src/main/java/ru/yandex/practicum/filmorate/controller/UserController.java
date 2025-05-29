@@ -61,8 +61,8 @@ public class UserController {
         return userService.getCommonFriends(id, otherId);
     }
 
-    @GetMapping(value = "/{id}/recommendations")
-    public List<Film> getRecommendedFilms(@NumberFormat @PathVariable(required = false) Long id) {
-        return recommendationService.getRecommendedFilmsByRate(id);
+    @GetMapping(value = "/{userId}/recommendations")
+    public List<Film> getRecommendedFilms(@NumberFormat @PathVariable(required = false) Long userId) {
+        return recommendationService.getRecommendedFilms(userId);
     }
 }

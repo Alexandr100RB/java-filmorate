@@ -21,31 +21,29 @@ public class RecommendationService {
         this.filmDbStorage = filmDbStorage;
     }
 
-    public List<Film> getRecommendedFilmsByRate(long userId) {
-        List<Like> likesForUserFilms = filmDbStorage.getLikesForFilmsLikedByUser(userId);
-        if (likesForUserFilms.isEmpty()) {
+    public List<Film> getRecommendedFilms(long userId) {
+        List<Like> likesForFilmsLikedByOriginUser = filmDbStorage.getLikesForFilmsLikedByUser(userId);
+        if (likesForFilmsLikedByOriginUser.isEmpty()) {
             return new ArrayList<>();
         }
-        HashMap<Long, Set<Long>> filmsLikedByUsers = getFilmsLikedUsers(likesForUserFilms);
+        HashMap<Long, Set<Long>> filmsLikedByUsers = getFilmsLikedUsers(likesForFilmsLikedByOriginUser);
         Set<Long> filmsLikedByOriginalUser = filmsLikedByUsers.get(userId);
         filmsLikedByUsers.remove(userId);
         HashMap<Long, Integer> usersWeights = getUsersWeights(filmsLikedByUsers, filmsLikedByOriginalUser);
         HashMap<Long, Integer> filmsRates = calculateFilmsRate(filmsLikedByUsers, usersWeights);
-        for (Long filmId : filmsLikedByOriginalUser) {
-            filmsRates.remove(filmId);
-        }
+        filmsLikedByOriginalUser.forEach(filmsRates::remove);
 
-        return getRecommendedFilmsByRate(filmsRates);
+        return getRecommendedFilms(filmsRates);
     }
 
-    private HashMap<Long, Set<Long>> getFilmsLikedUsers(List<Like> likesSet) {
+    private HashMap<Long, Set<Long>> getFilmsLikedUsers(List<Like> likes) {
         HashMap<Long, Set<Long>> filmsLikedByUsers = new HashMap<>();
-        for (Like like : likesSet) {
+        likes.forEach(like -> {
             if (!filmsLikedByUsers.containsKey(like.getUserId())) {
                 filmsLikedByUsers.put(like.getUserId(), new HashSet<>());
             }
             filmsLikedByUsers.get(like.getUserId()).add(like.getFilmId());
-        }
+        });
 
         return filmsLikedByUsers;
     }
@@ -82,7 +80,7 @@ public class RecommendationService {
         return filmsRate;
     }
 
-    private List<Film> getRecommendedFilmsByRate(HashMap<Long, Integer> filmsRate) {
+    private List<Film> getRecommendedFilms(HashMap<Long, Integer> filmsRate) {
         List<Film> films = new ArrayList<>();
         while (!filmsRate.isEmpty()) {
             Long flmId = Collections.max(filmsRate.entrySet(), Map.Entry.comparingByValue()).getKey();

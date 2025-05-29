@@ -11,6 +11,7 @@ import lombok.Setter;
 @Builder
 @Setter(AccessLevel.NONE)
 public class Like {
+    @NotNull
     private long userId;
     @NotNull
     private long filmId;
