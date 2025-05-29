@@ -149,16 +149,19 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> getPopularFilms(Integer count) {
+
         String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
-                "FROM (SELECT film_id, COUNT(*) AS countOfLikes " +
-                "FROM likes " +
-                "GROUP BY film_id " +
-                "ORDER BY countOfLikes DESC LIMIT :count) AS p " +
-                "JOIN films AS f ON p.film_id = f.film_id " +
+                "FROM films AS f " +
+                "LEFT JOIN ( " +
+                "    SELECT film_id, COUNT(*) AS countOfLikes " +
+                "    FROM likes " +
+                "    GROUP BY film_id " +
+                ") AS p ON f.film_id = p.film_id " +
                 "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
                 "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
                 "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
-                "ORDER BY p.countOfLikes DESC, f.film_id;";
+                "ORDER BY p.countOfLikes DESC, f.film_id " +
+                "LIMIT :count;";
 
         return jdbc.query(sql, new MapSqlParameterSource("count", count), rs -> {
             Collection<Film> films = new LinkedList<>();

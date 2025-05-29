@@ -98,6 +98,14 @@ public class FilmService {
         log.debug("Пользователь {} убрал лайк у фильма {}", userId, filmId);
     }
 
+    public void deleteFilmById(Long id) {
+        if (!filmStorage.isFilmExists(id)) {
+            throw new DataNotFoundException("Фильм с id " + id + " не найден");
+        }
+        filmStorage.deleteFilmById(id);
+        log.debug("Фильм {} удалён", id);
+    }
+
 
     public Collection<Film> getPopularFilms(Integer sizeOfList) {
         return filmStorage.getPopularFilms(sizeOfList);
