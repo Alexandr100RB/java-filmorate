@@ -104,7 +104,6 @@ public class FilmService {
     }
 
     public Collection<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
-        log.info("Запрос популярных фильмов. Количество: {}, жанр: {}, год: {}", count, genreId, year);
         return filmStorage.getMostPopularFilms(count, genreId, year);
     }
 
