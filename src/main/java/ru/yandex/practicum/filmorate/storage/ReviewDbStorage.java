@@ -2,55 +2,54 @@ package ru.yandex.practicum.filmorate.storage;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Component;
+
+import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
 import ru.yandex.practicum.filmorate.model.Review;
 
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Optional;
 
-@Component
+@Repository
 @RequiredArgsConstructor
 public class ReviewDbStorage implements ReviewStorage {
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcOperations jdbc;
 
     @Override
     public Review create(Review review) {
-        String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO reviews (content, is_positive, user_id, film_id) " +
+                "VALUES (:content, :isPositive, :userId, :filmId)";
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("content", review.getContent())
+                .addValue("isPositive", review.getIsPositive())
+                .addValue("userId", review.getUserId())
+                .addValue("filmId", review.getFilmId());
+
         KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(sql, params, keyHolder, new String[]{"review_id"});
 
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"review_id"});
-            ps.setString(1, review.getContent());
-            ps.setBoolean(2, review.getIsPositive());
-            ps.setLong(3, review.getUserId());
-            ps.setLong(4, review.getFilmId());
-            return ps;
-        }, keyHolder);
-
-        Number key = keyHolder.getKey();
-        if (key != null) {
-            review.setReviewId(key.intValue());
-        }
+        review.setReviewId(keyHolder.getKey().intValue());
         review.setUseful(0);
         return review;
     }
 
     @Override
     public Review update(Review review) {
-        String sql = "UPDATE reviews SET content = ?, is_positive = ? WHERE review_id = ?";
-        int rowsUpdated = jdbcTemplate.update(sql,
-                review.getContent(),
-                review.getIsPositive(),
-                review.getReviewId());
+        String sql = "UPDATE reviews SET content = :content, is_positive = :isPositive WHERE review_id = :reviewId";
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("content", review.getContent())
+                .addValue("isPositive", review.getIsPositive())
+                .addValue("reviewId", review.getReviewId());
 
-        if (rowsUpdated == 0) {
+        int updated = jdbc.update(sql, params);
+        if (updated == 0) {
             throw new DataNotFoundException("Review with id " + review.getReviewId() + " not found");
         }
         return findById(review.getReviewId()).orElseThrow();
@@ -58,14 +57,16 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public void delete(Integer id) {
-        jdbcTemplate.update("DELETE FROM reviews WHERE review_id = ?", id);
+        jdbc.update("DELETE FROM reviews WHERE review_id = :id", new MapSqlParameterSource("id", id));
     }
 
     @Override
     public Optional<Review> findById(Integer id) {
-        String sql = "SELECT * FROM reviews WHERE review_id = ?";
+        String sql = "SELECT * FROM reviews WHERE review_id = :id";
         try {
-            return Optional.ofNullable(jdbcTemplate.queryForObject(sql, this::mapRowToReview, id));
+            return Optional.ofNullable(jdbc.queryForObject(sql,
+                    new MapSqlParameterSource("id", id),
+                    this::mapRowToReview));
         } catch (EmptyResultDataAccessException e) {
             return Optional.empty();
         }
@@ -74,12 +75,15 @@ public class ReviewDbStorage implements ReviewStorage {
     @Override
     public List<Review> findByFilmId(Long filmId, int count) {
         String sql = (filmId == null)
-                ? "SELECT * FROM reviews ORDER BY useful DESC LIMIT ?"
-                : "SELECT * FROM reviews WHERE film_id = ? ORDER BY useful DESC LIMIT ?";
+                ? "SELECT * FROM reviews ORDER BY useful DESC LIMIT :count"
+                : "SELECT * FROM reviews WHERE film_id = :filmId ORDER BY useful DESC LIMIT :count";
 
-        return (filmId == null)
-                ? jdbcTemplate.query(sql, this::mapRowToReview, count)
-                : jdbcTemplate.query(sql, this::mapRowToReview, filmId, count);
+        MapSqlParameterSource params = new MapSqlParameterSource("count", count);
+        if (filmId != null) {
+            params.addValue("filmId", filmId);
+        }
+
+        return jdbc.query(sql, params, this::mapRowToReview);
     }
 
     @Override
@@ -94,29 +98,43 @@ public class ReviewDbStorage implements ReviewStorage {
 
     @Override
     public void removeReaction(Integer reviewId, Long userId) {
-        jdbcTemplate.update(
-                "DELETE FROM review_reactions WHERE review_id = ? AND user_id = ?",
-                reviewId, userId);
+        String sql = "DELETE FROM review_reactions WHERE review_id = :reviewId AND user_id = :userId";
+        jdbc.update(sql, new MapSqlParameterSource()
+                .addValue("reviewId", reviewId)
+                .addValue("userId", userId));
         recalculateUseful(reviewId);
     }
 
     private void updateReaction(Integer reviewId, Long userId, boolean isLike) {
-        jdbcTemplate.update(
-                "INSERT INTO review_reactions (review_id, user_id, is_like) VALUES (?, ?, ?) " +
-                        "ON CONFLICT (review_id, user_id) DO UPDATE SET is_like = ?",
-                reviewId, userId, isLike, isLike);
+        String checkSql = "SELECT COUNT(*) FROM review_reactions WHERE review_id = :reviewId AND user_id = :userId";
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("reviewId", reviewId)
+                .addValue("userId", userId)
+                .addValue("isLike", isLike); // заранее добавим, пригодится
+
+        Integer count = jdbc.queryForObject(checkSql, params, Integer.class);
+
+        if (count != null && count > 0) {
+            String updateSql = "UPDATE review_reactions SET is_like = :isLike WHERE review_id = :reviewId AND user_id = :userId";
+            jdbc.update(updateSql, params);
+        } else {
+            String insertSql = "INSERT INTO review_reactions (review_id, user_id, is_like) VALUES (:reviewId, :userId, :isLike)";
+            jdbc.update(insertSql, params);
+        }
+
         recalculateUseful(reviewId);
     }
 
-    private void recalculateUseful(Integer reviewId) {
-        Integer useful = jdbcTemplate.queryForObject(
-                "SELECT COALESCE(SUM(CASE WHEN is_like THEN 1 ELSE -1 END), 0) " +
-                        "FROM review_reactions WHERE review_id = ?",
-                Integer.class, reviewId);
 
-        jdbcTemplate.update(
-                "UPDATE reviews SET useful = ? WHERE review_id = ?",
-                useful, reviewId);
+    private void recalculateUseful(Integer reviewId) {
+        String sql = "SELECT COALESCE(SUM(CASE WHEN is_like THEN 1 ELSE -1 END), 0) " +
+                "FROM review_reactions WHERE review_id = :reviewId";
+        Integer useful = jdbc.queryForObject(sql, new MapSqlParameterSource("reviewId", reviewId), Integer.class);
+
+        jdbc.update("UPDATE reviews SET useful = :useful WHERE review_id = :reviewId",
+                new MapSqlParameterSource()
+                        .addValue("useful", useful)
+                        .addValue("reviewId", reviewId));
     }
 
     private Review mapRowToReview(ResultSet rs, int rowNum) throws SQLException {
@@ -130,6 +148,7 @@ public class ReviewDbStorage implements ReviewStorage {
         return review;
     }
 }
+
 
 
 

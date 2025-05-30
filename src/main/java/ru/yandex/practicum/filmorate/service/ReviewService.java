@@ -106,10 +106,12 @@ public class ReviewService {
     }
 
     private void validateReviewAndUser(int reviewId, Long userId) {
-        if (reviewStorage.findById(reviewId) == null) {
-            throw new DataNotFoundException("Review with id " + reviewId + " not found");
-        }
-        if (userStorage.getUserById(userId) == null) {
+        reviewStorage.findById(reviewId)
+                .orElseThrow(() -> new DataNotFoundException("Review with id " + reviewId + " not found"));
+
+        try {
+            userStorage.getUserById(userId);
+        } catch (EmptyResultDataAccessException e) {
             throw new DataNotFoundException("User with id " + userId + " not found");
         }
     }
