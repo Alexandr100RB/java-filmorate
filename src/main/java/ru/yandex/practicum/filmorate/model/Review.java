@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 public class Review {
 
-    private Integer reviewId;  
+    private Integer reviewId;
 
     @NotBlank
     private String content;
