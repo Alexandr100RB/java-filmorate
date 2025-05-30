@@ -11,18 +11,13 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Repository
 @Primary
@@ -241,5 +236,22 @@ public class FilmDbStorage implements FilmStorage {
     public boolean isFilmExists(Long filmId) {
         String sql = "SELECT COUNT(*) FROM films WHERE film_id = :film_id;";
         return 1 == jdbc.queryForObject(sql, new MapSqlParameterSource("film_id", filmId), Integer.class);
+    }
+
+    @Override
+    public List<Like> getLikesForFilmsLikedByUser(long userId) {
+        String sql = "SELECT * FROM likes WHERE user_id IN" +
+                " (SELECT user_id FROM likes WHERE film_id IN " +
+                "(SELECT film_id FROM likes WHERE user_id=(:id)))";
+
+        return jdbc.query(sql, new MapSqlParameterSource("id", userId),
+                (rs, rowNumber) -> createLike(rs));
+    }
+
+    private Like createLike(ResultSet rs) throws SQLException {
+        return Like.builder()
+                .userId(rs.getLong("user_id"))
+                .filmId(rs.getLong("film_id"))
+                .build();
     }
 }
