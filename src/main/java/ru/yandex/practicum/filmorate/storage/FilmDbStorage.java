@@ -11,11 +11,13 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Like;
 import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -152,16 +154,19 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public Collection<Film> getPopularFilms(Integer count) {
+
         String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
-                "FROM (SELECT film_id, COUNT(*) AS countOfLikes " +
-                "FROM likes " +
-                "GROUP BY film_id " +
-                "ORDER BY countOfLikes DESC LIMIT :count) AS p " +
-                "JOIN films AS f ON p.film_id = f.film_id " +
+                "FROM films AS f " +
+                "LEFT JOIN ( " +
+                "    SELECT film_id, COUNT(*) AS countOfLikes " +
+                "    FROM likes " +
+                "    GROUP BY film_id " +
+                ") AS p ON f.film_id = p.film_id " +
                 "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
                 "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
                 "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
-                "ORDER BY p.countOfLikes DESC, f.film_id;";
+                "ORDER BY p.countOfLikes DESC, f.film_id " +
+                "LIMIT :count;";
 
         return jdbc.query(sql, new MapSqlParameterSource("count", count), rs -> {
             Collection<Film> films = new LinkedList<>();
@@ -245,8 +250,64 @@ public class FilmDbStorage implements FilmStorage {
     }
 
     @Override
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
+                "       f.rating_id, mpa.name AS mpa_rating_name, " +
+                "       g.genre_id, g.name AS genre_name " +
+                "FROM films f " +
+                "INNER JOIN likes l1 ON f.film_id = l1.film_id AND l1.user_id = :userId " +
+                "INNER JOIN likes l2 ON f.film_id = l2.film_id AND l2.user_id = :friendId " +
+                "INNER JOIN likes all_likes ON f.film_id = all_likes.film_id " +
+                "LEFT JOIN mpa_rating mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres g ON fg.genre_id = g.genre_id " +
+                "GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, f.rating_id, mpa.name, g.genre_id, g.name " +
+                "ORDER BY COUNT(all_likes.user_id) DESC";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("friendId", friendId);
+
+        List<Film> filmsWithGenres = jdbc.query(sql, params, (rs, rowNum) -> {
+            Film film = mapRowToFilm(rs, rowNum);
+            int genreId = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                film.getGenres().add(new Genre(genreId, rs.getString("genre_name")));
+            }
+            return film;
+        });
+
+        Map<Long, Film> filmMap = new LinkedHashMap<>();
+        for (Film film : filmsWithGenres) {
+            filmMap.merge(film.getId(), film, (existing, current) -> {
+                existing.getGenres().addAll(current.getGenres());
+                return existing;
+            });
+        }
+
+        return new ArrayList<>(filmMap.values());
+    }
+
+    @Override
     public boolean isFilmExists(Long filmId) {
         String sql = "SELECT COUNT(*) FROM films WHERE film_id = :film_id;";
         return 1 == jdbc.queryForObject(sql, new MapSqlParameterSource("film_id", filmId), Integer.class);
+    }
+
+    @Override
+    public List<Like> getLikesForFilmsLikedByUser(long userId) {
+        String sql = "SELECT * FROM likes WHERE user_id IN" +
+                " (SELECT user_id FROM likes WHERE film_id IN " +
+                "(SELECT film_id FROM likes WHERE user_id=(:id)))";
+
+        return jdbc.query(sql, new MapSqlParameterSource("id", userId),
+                (rs, rowNumber) -> createLike(rs));
+    }
+
+    private Like createLike(ResultSet rs) throws SQLException {
+        return Like.builder()
+                .userId(rs.getLong("user_id"))
+                .filmId(rs.getLong("film_id"))
+                .build();
     }
 }

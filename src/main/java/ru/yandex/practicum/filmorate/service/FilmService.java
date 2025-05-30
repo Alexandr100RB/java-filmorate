@@ -99,6 +99,14 @@ public class FilmService {
         log.debug("Пользователь {} убрал лайк у фильма {}", userId, filmId);
     }
 
+    public void deleteFilmById(Long id) {
+        if (!filmStorage.isFilmExists(id)) {
+            throw new DataNotFoundException("Фильм с id " + id + " не найден");
+        }
+        filmStorage.deleteFilmById(id);
+        log.debug("Фильм {} удалён", id);
+    }
+
 
     public Collection<Film> getPopularFilms(Integer sizeOfList) {
         return filmStorage.getPopularFilms(sizeOfList);
@@ -106,7 +114,7 @@ public class FilmService {
 
     public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
         return filmStorage.getMostPopularFilms(count, genreId, year);
-    }
+       }
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
