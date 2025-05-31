@@ -17,9 +17,8 @@ import java.util.Map;
 @Repository
 @Primary
 @RequiredArgsConstructor
-public class DirectorDbStorage implements DirectorStorage{
+public class DirectorDbStorage implements DirectorStorage {
     private final NamedParameterJdbcOperations jdbc;
-
 
     @Override
     public Director getDirectorById(Integer directorId) {
