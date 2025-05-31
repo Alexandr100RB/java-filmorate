@@ -306,8 +306,9 @@ public class FilmDbStorage implements FilmStorage {
                 "JOIN directors d ON fd.director_id = d.director_id " +
                 "WHERE fd.film_id = :filmId";
 
-        return new HashSet<> (jdbc.query(sql, Map.of("filmId", filmId),
+        return new HashSet<>(jdbc.query(sql, Map.of("filmId", filmId),
                 (rs, rowNum) -> new Director(rs.getInt("director_id"), rs.getString("name"))));
+    }
 
     public List<Like> getLikesForFilmsLikedByUser(long userId) {
         String sql = "SELECT * FROM likes WHERE user_id IN" +
