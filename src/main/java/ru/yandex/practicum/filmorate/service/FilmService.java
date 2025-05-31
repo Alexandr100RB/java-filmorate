@@ -120,4 +120,12 @@ public class FilmService {
             throw new ValidationException("Продолжительность фильма не может быть меньше нуля: " + film);
         }
     }
+
+    public Collection<Film> getFilmsByDirectorSorted(int directorId, String sortBy) {
+        if (!sortBy.equals("year") && !sortBy.equals("likes")) {
+            throw new ValidationException("Параметр sortBy должен быть 'year' или 'likes', но получен: " + sortBy);
+        }
+
+        return filmStorage.getFilmsByDirectorSorted(directorId, sortBy);
+    }
 }
