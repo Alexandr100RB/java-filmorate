@@ -2,12 +2,16 @@ package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.NumberFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.RecommendationService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
+import java.util.List;
 
 @RestController
 @RequestMapping("/users")
@@ -15,6 +19,7 @@ import java.util.Collection;
 @Validated
 public class UserController {
     private final UserService userService;
+    private final RecommendationService recommendationService;
 
     @GetMapping
     public Collection<User> findAll() {
@@ -54,5 +59,15 @@ public class UserController {
     @GetMapping("/{id}/friends/common/{otherId}")
     public Collection<User> getCommonFriends(@PathVariable("id") long id, @PathVariable("otherId") long otherId) {
         return userService.getCommonFriends(id, otherId);
+    }
+
+    @GetMapping(value = "/{userId}/recommendations")
+    public List<Film> getRecommendedFilms(@NumberFormat @PathVariable(required = false) Long userId) {
+        return recommendationService.getRecommendedFilms(userId);
+    }
+
+    @DeleteMapping("/{userId}")
+    public void deleteUserById(@PathVariable("userId") long userId) {
+        userService.deleteUserById(userId);
     }
 }
