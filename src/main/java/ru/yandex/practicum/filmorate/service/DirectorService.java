@@ -15,6 +15,7 @@ import java.util.Collection;
 @AllArgsConstructor
 public class DirectorService {
     private final DirectorStorage directorStorage;
+
     public Director create(Director director) {
         Director createdDirector = directorStorage.create(director);
         log.info(String.format("Добавлен режиссёр %s", director));
