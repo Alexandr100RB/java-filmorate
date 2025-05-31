@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.storage;
 
 import ru.yandex.practicum.filmorate.model.Film;
+
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.Like;
 
 import java.util.Collection;
 import java.util.List;
@@ -34,4 +36,8 @@ public interface FilmStorage {
     void setFilmDirectors(long filmId, Set<Director> directors);
 
     void setFilmGenres(Long filmId, Set<Genre> genres);
+
+    List<Film> getCommonFilms(Integer userId, Integer friendId);
+
+    List<Like> getLikesForFilmsLikedByUser(long userId);
 }
