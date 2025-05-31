@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Review;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.ReviewStorage;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
@@ -19,6 +21,7 @@ public class ReviewService {
     private final ReviewStorage reviewStorage;
     private final UserStorage userStorage;
     private final FilmStorage filmStorage;
+    private final FeedService feedService;
 
     public Review create(@Valid Review review) {
         validateReviewFields(review, false);
@@ -33,8 +36,10 @@ public class ReviewService {
         if (film == null) {
             throw new DataNotFoundException("Film with id " + review.getFilmId() + " not found");
         }
+        Review result = reviewStorage.create(review);
+        feedService.addFeed(review.getUserId(), result.getReviewId(), EventTypes.REVIEW, OperationTypes.ADD);
 
-        return reviewStorage.create(review);
+        return result;
     }
 
 
@@ -50,16 +55,19 @@ public class ReviewService {
         }
 
         reviewStorage.update(review);
+        feedService.addFeed(review.getUserId(), review.getReviewId(), EventTypes.REVIEW, OperationTypes.UPDATE);
 
         return reviewStorage.findById(review.getReviewId())
-                .orElseThrow(() -> new DataNotFoundException("Review with id " + review.getReviewId() + " not found after update"));
+                .orElseThrow(() -> new DataNotFoundException("Review with id " + review.getReviewId() +
+                        " not found after update"));
     }
 
     public void delete(int id) {
-        reviewStorage.findById(id)
+        Review review = reviewStorage.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Review with id " + id + " not found"));
 
         reviewStorage.delete(id);
+        feedService.addFeed(review.getUserId(), id, EventTypes.REVIEW, OperationTypes.REMOVE);
     }
 
     public Review findById(int id) {
@@ -115,6 +123,4 @@ public class ReviewService {
             throw new DataNotFoundException("User with id " + userId + " not found");
         }
     }
-
 }
-
