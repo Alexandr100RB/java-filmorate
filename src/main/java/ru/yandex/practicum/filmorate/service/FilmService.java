@@ -7,6 +7,8 @@ import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 import ru.yandex.practicum.filmorate.storage.GenreStorage;
 import ru.yandex.practicum.filmorate.storage.MpaStorage;
@@ -25,6 +27,7 @@ public class FilmService {
     private final UserStorage userStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final FeedService feedService;
 
     public Collection<Film> findAll() {
         return filmStorage.findAll();
@@ -85,6 +88,7 @@ public class FilmService {
             throw new DataNotFoundException("Пользователь с id " + userId + "не найден");
         }
         filmStorage.addLikeByUser(filmId, userId);
+        feedService.addFeed(userId, filmId, EventTypes.LIKE, OperationTypes.ADD);
         log.debug("Пользователь {} поставил лайк фильму {}", userId, filmId);
     }
 
@@ -96,6 +100,7 @@ public class FilmService {
             throw new DataNotFoundException("Пользователь с id " + userId + " не найден");
         }
         filmStorage.removeLike(filmId, userId);
+        feedService.addFeed(userId, filmId, EventTypes.LIKE, OperationTypes.REMOVE);
         log.debug("Пользователь {} убрал лайк у фильма {}", userId, filmId);
     }
 
@@ -132,5 +137,13 @@ public class FilmService {
         if (film.getDuration() == null || film.getDuration() <= 0) {
             throw new ValidationException("Продолжительность фильма не может быть меньше нуля: " + film);
         }
+    }
+
+    public Collection<Film> getFilmsByDirectorSorted(int directorId, String sortBy) {
+        if (!sortBy.equals("year") && !sortBy.equals("likes")) {
+            throw new ValidationException("Параметр sortBy должен быть 'year' или 'likes', но получен: " + sortBy);
+        }
+
+        return filmStorage.getFilmsByDirectorSorted(directorId, sortBy);
     }
 }
