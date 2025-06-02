@@ -16,15 +16,15 @@ import ru.yandex.practicum.filmorate.model.Like;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-import java.time.LocalDate;
-
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Repository
 @Primary
