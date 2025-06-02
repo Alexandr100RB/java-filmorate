@@ -5,8 +5,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.NumberFormat;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.model.Feed;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.RecommendationService;
 import ru.yandex.practicum.filmorate.service.UserService;
 
@@ -20,6 +22,7 @@ import java.util.List;
 public class UserController {
     private final UserService userService;
     private final RecommendationService recommendationService;
+    private final FeedService feedService;
 
     @GetMapping
     public Collection<User> findAll() {
@@ -69,5 +72,10 @@ public class UserController {
     @DeleteMapping("/{userId}")
     public void deleteUserById(@PathVariable("userId") long userId) {
         userService.deleteUserById(userId);
+    }
+
+    @GetMapping(value = "/{userId}/feed")
+    public List<Feed> getFeedsByUserId(@PathVariable("userId") Long userId) {
+        return feedService.getFeedByUserId(userId);
     }
 }
