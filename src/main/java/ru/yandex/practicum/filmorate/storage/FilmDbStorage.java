@@ -15,8 +15,16 @@ import ru.yandex.practicum.filmorate.model.Like;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
 
+import java.util.ArrayList;
+import java.util.Collection;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Repository
 @Primary
@@ -200,6 +208,55 @@ public class FilmDbStorage implements FilmStorage {
             }
             return films;
         });
+    }
+
+    @Override
+    public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+        String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
+                "FROM (SELECT l.film_id, COUNT(*) AS countOfLikes " +
+                "      FROM likes l " +
+                "      JOIN films f ON l.film_id = f.film_id " +
+                "      LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
+                "      WHERE 1=1 " +
+                (genreId != null ? " AND fg.genre_id = :genreId " : "") +
+                (year != null ? " AND EXTRACT(YEAR FROM f.release_date) = :year " : "") +
+                "      GROUP BY l.film_id " +
+                "      ORDER BY countOfLikes DESC LIMIT :count) AS p " +
+                "JOIN films AS f ON p.film_id = f.film_id " +
+                "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
+                (genreId != null ? " WHERE fg.genre_id = :genreId " : "") +
+                " ORDER BY p.countOfLikes DESC, f.film_id";
+
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("count", count);
+
+        if (genreId != null) {
+            params.addValue("genreId", genreId);
+        }
+        if (year != null) {
+            params.addValue("year", year);
+        }
+
+        List<Film> filmsWithGenres = jdbc.query(sql, params, (rs, rowNum) -> {
+            Film film = mapRowToFilm(rs, rowNum);
+            Integer genreIdFromRs = rs.getInt("genre_id");
+            if (!rs.wasNull()) {
+                film.getGenres().add(new Genre(genreIdFromRs, rs.getString("genre_name")));
+            }
+            return film;
+        });
+
+        Map<Long, Film> filmMap = new LinkedHashMap<>();
+        for (Film film : filmsWithGenres) {
+            filmMap.merge(film.getId(), film, (existing, current) -> {
+                existing.getGenres().addAll(current.getGenres());
+                return existing;
+            });
+        }
+
+        return new ArrayList<>(filmMap.values());
     }
 
     @Override

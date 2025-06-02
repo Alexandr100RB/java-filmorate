@@ -29,6 +29,8 @@ public interface FilmStorage {
 
     boolean isFilmExists(Long filmId);
 
+    List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year);
+
     List<Film> getFilmsByDirectorSorted(int directorId, String sortBy);
 
     Set<Director> loadDirectors(Long filmId);

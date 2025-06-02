@@ -117,9 +117,9 @@ public class FilmService {
         return filmStorage.getPopularFilms(sizeOfList);
     }
 
-    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
-        return filmStorage.getCommonFilms(userId, friendId);
-    }
+    public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+        return filmStorage.getMostPopularFilms(count, genreId, year);
+       }
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
