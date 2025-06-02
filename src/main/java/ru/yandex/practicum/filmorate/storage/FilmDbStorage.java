@@ -19,6 +19,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -44,6 +45,7 @@ public class FilmDbStorage implements FilmStorage {
         film.setDuration(resultSet.getInt("duration"));
         film.setMpa(mpaStorage.getMpaById(resultSet.getInt("rating_id")));
         film.setDirectors(loadDirectors(id));
+        film.setGenres(loadGenres(id));
         return film;
     }
 
@@ -363,6 +365,19 @@ public class FilmDbStorage implements FilmStorage {
                 (rs, rowNum) -> new Director(rs.getInt("director_id"), rs.getString("name"))));
     }
 
+    @Override
+    public Set<Genre> loadGenres(Long filmId) {
+        String sql = "SELECT g.genre_id, g.name " +
+                "FROM film_genres fg " +
+                "JOIN genres g ON fg.genre_id = g.genre_id " +
+                "WHERE fg.film_id = :filmId";
+
+        Map<String, Object> params = Map.of("filmId", filmId);
+        return new HashSet<>(jdbc.query(sql, params, (rs, rowNum) ->
+                new Genre(rs.getInt("genre_id"), rs.getString("name"))
+        ));
+    }
+
     public List<Like> getLikesForFilmsLikedByUser(long userId) {
         String sql = "SELECT * FROM likes WHERE user_id IN" +
                 " (SELECT user_id FROM likes WHERE film_id IN " +
@@ -377,5 +392,34 @@ public class FilmDbStorage implements FilmStorage {
                 .userId(rs.getLong("user_id"))
                 .filmId(rs.getLong("film_id"))
                 .build();
+    }
+
+    @Override
+    public List<Film> search(String query, String by) {
+        String likeQuery = "%" + query.toLowerCase() + "%";
+        StringBuilder sql = new StringBuilder(
+                "SELECT f.*, COUNT(fl.user_id) AS likes " +
+                        "FROM films f " +
+                        "LEFT JOIN likes fl ON f.film_id = fl.film_id " +
+                        "LEFT JOIN film_directors fd ON f.film_id = fd.film_id " +
+                        "LEFT JOIN directors d ON fd.director_id = d.director_id " +
+                        "WHERE ");
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("query", likeQuery);
+
+        List<String> conditions = new ArrayList<>();
+        if (by.contains("title")) {
+            conditions.add("LOWER(f.name) LIKE :query");
+        }
+        if (by.contains("director")) {
+            conditions.add("LOWER(d.name) LIKE :query");
+        }
+
+        sql.append(String.join(" OR ", conditions));
+        sql.append(" GROUP BY f.film_id ORDER BY likes DESC");
+
+        List<Film> films = jdbc.query(sql.toString(), params, this::mapRowToFilm);
+        return films;
     }
 }
