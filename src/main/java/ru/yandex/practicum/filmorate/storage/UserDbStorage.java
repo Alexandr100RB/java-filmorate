@@ -6,12 +6,14 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
 import ru.yandex.practicum.filmorate.model.User;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 
 @Repository
 @Primary
@@ -41,8 +43,13 @@ public class UserDbStorage implements UserStorage {
 
     @Override
     public User getUserById(Long userId) {
-        String sqlQuery = "SELECT * FROM users WHERE user_id = :user_id;";
-        return jdbc.queryForObject(sqlQuery, new MapSqlParameterSource("user_id", userId), this::mapRowToUser);
+        String sql = "SELECT * FROM users WHERE user_id = :userId";
+        MapSqlParameterSource params = new MapSqlParameterSource().addValue("userId", userId);
+        List<User> users = jdbc.query(sql, params, this::mapRowToUser);
+        if (users.isEmpty()) {
+            throw new DataNotFoundException("Пользователь с id=" + userId + " не найден");
+        }
+        return users.get(0);
     }
 
     @Override
