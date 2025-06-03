@@ -97,7 +97,8 @@ public class FilmDbStorage implements FilmStorage {
 
         setFilmGenres(newFilm.getId(), newFilm.getGenres());
         setFilmDirectors(newFilm.getId(), newFilm.getDirectors());
-        return newFilm;
+
+        return findFilmById(newFilm.getId());
     }
 
     @Override
@@ -165,13 +166,13 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLikeByUser(Long filmId, Long userId) {
-        String sql = "INSERT INTO likes (user_id, film_id) VALUES (:user_id, :film_id);";
-
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-        parameterSource.addValue("user_id", userId);
-        parameterSource.addValue("film_id", filmId);
-
-        jdbc.update(sql, parameterSource);
+        String checkSql = "SELECT COUNT(*) FROM likes WHERE user_id = :userId AND film_id = :filmId";
+        Map<String, Object> params = Map.of("userId", userId, "filmId", filmId);
+        Integer count = jdbc.queryForObject(checkSql, params, Integer.class);
+        if (count != null && count == 0) {
+            String sql = "INSERT INTO likes (user_id, film_id) VALUES (:userId, :filmId)";
+            jdbc.update(sql, params);
+        }
     }
 
     @Override
@@ -214,32 +215,26 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
-        String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
-                "FROM (SELECT l.film_id, COUNT(*) AS countOfLikes " +
-                "      FROM likes l " +
-                "      JOIN films f ON l.film_id = f.film_id " +
-                "      LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
-                "      WHERE 1=1 " +
-                (genreId != null ? " AND fg.genre_id = :genreId " : "") +
-                (year != null ? " AND EXTRACT(YEAR FROM f.release_date) = :year " : "") +
-                "      GROUP BY l.film_id " +
-                "      ORDER BY countOfLikes DESC LIMIT :count) AS p " +
-                "JOIN films AS f ON p.film_id = f.film_id " +
-                "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
-                "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
-                "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
-                (genreId != null ? " WHERE fg.genre_id = :genreId " : "") +
-                " ORDER BY p.countOfLikes DESC, f.film_id";
+        String sql = "SELECT f.film_id, f.name, f.description, f.release_date, f.duration, " +
+                "       f.rating_id, mpa.name AS mpa_rating_name, " +
+                "       fg.genre_id, g.name AS genre_name, " +
+                "       COUNT(l.user_id) AS count_of_likes " +
+                "FROM films f " +
+                "LEFT JOIN likes l ON f.film_id = l.film_id " +
+                "LEFT JOIN mpa_rating mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres g ON fg.genre_id = g.genre_id " +
+                "WHERE (:genreId IS NULL OR fg.genre_id = :genreId) " +
+                "  AND (:year IS NULL OR EXTRACT(YEAR FROM f.release_date) = :year) " +
+                "GROUP BY f.film_id, f.name, f.description, f.release_date, f.duration, " +
+                "         f.rating_id, mpa.name, fg.genre_id, g.name " +
+                "ORDER BY count_of_likes DESC " +
+                "LIMIT :count";
 
         MapSqlParameterSource params = new MapSqlParameterSource()
-                .addValue("count", count);
-
-        if (genreId != null) {
-            params.addValue("genreId", genreId);
-        }
-        if (year != null) {
-            params.addValue("year", year);
-        }
+                .addValue("count", count)
+                .addValue("genreId", genreId)
+                .addValue("year", year);
 
         List<Film> filmsWithGenres = jdbc.query(sql, params, (rs, rowNum) -> {
             Film film = mapRowToFilm(rs, rowNum);
@@ -250,6 +245,7 @@ public class FilmDbStorage implements FilmStorage {
             return film;
         });
 
+        // Убираем дубликаты по film_id и объединяем жанры
         Map<Long, Film> filmMap = new LinkedHashMap<>();
         for (Film film : filmsWithGenres) {
             filmMap.merge(film.getId(), film, (existing, current) -> {
@@ -260,6 +256,7 @@ public class FilmDbStorage implements FilmStorage {
 
         return new ArrayList<>(filmMap.values());
     }
+
 
     @Override
     public void removeLike(Long filmId, Long userId) {
@@ -338,7 +335,7 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         return jdbc.query(sql, Map.of("directorId", directorId), (rs, rowNum) -> {
-            Film film = mapRowToFilm(rs, 2); // твой метод маппинга фильма
+            Film film = mapRowToFilm(rs, 2);
             film.setDirectors(loadDirectors(film.getId()));
             return film;
         });

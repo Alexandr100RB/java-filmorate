@@ -49,6 +49,10 @@ public class ReviewService {
         Review existingReview = reviewStorage.findById(review.getReviewId())
                 .orElseThrow(() -> new DataNotFoundException("Review with id " + review.getReviewId() + " not found"));
 
+        review.setUserId(existingReview.getUserId());
+        review.setFilmId(existingReview.getFilmId());
+
+
         if (!existingReview.getUserId().equals(review.getUserId()) ||
                 !existingReview.getFilmId().equals(review.getFilmId())) {
             throw new IllegalArgumentException("Cannot change userId or filmId of review");

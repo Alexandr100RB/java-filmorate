@@ -9,10 +9,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.GenreStorage;
-import ru.yandex.practicum.filmorate.storage.MpaStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.storage.*;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -25,6 +22,7 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final DirectorDbStorage directorDbStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
     private final FeedService feedService;
@@ -47,7 +45,7 @@ public class FilmService {
         }
         Film createdFilm = filmStorage.create(film);
         log.info("Фильм {} создан", createdFilm);
-        return createdFilm;
+        return filmStorage.findFilmById(createdFilm.getId());
     }
 
     public Film update(Film newFilm) {
@@ -143,12 +141,19 @@ public class FilmService {
         if (!sortBy.equals("year") && !sortBy.equals("likes")) {
             throw new ValidationException("Параметр sortBy должен быть 'year' или 'likes', но получен: " + sortBy);
         }
+        if (!directorDbStorage.isDirectorExists(directorId)) {
+            throw new DataNotFoundException("Режиссер с id " + directorId + " не найден");
+        }
 
         return filmStorage.getFilmsByDirectorSorted(directorId, sortBy);
     }
 
     public List<Film> search(String query, String by) {
         return filmStorage.search(query, by);
+    }
+
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
     }
 
 }
