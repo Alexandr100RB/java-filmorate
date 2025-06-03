@@ -33,7 +33,7 @@ public class DirectorController {
     }
 
     @PostMapping
-    public Director create(@RequestBody Director director) {
+    public Director create(@Validated @RequestBody Director director) {
         return directorService.create(director);
     }
 

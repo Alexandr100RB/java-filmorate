@@ -1,5 +1,9 @@
 package ru.yandex.practicum.filmorate.model;
 
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +18,7 @@ import java.util.Map;
 @NoArgsConstructor
 public class Director {
     private Integer id;
+    @Pattern(regexp = "^(?!\\s).*")
     private String name;
 
     public Map<String, Object> toMap() {

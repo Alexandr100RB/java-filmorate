@@ -97,7 +97,8 @@ public class FilmDbStorage implements FilmStorage {
 
         setFilmGenres(newFilm.getId(), newFilm.getGenres());
         setFilmDirectors(newFilm.getId(), newFilm.getDirectors());
-        return newFilm;
+
+        return findFilmById(newFilm.getId());
     }
 
     @Override
