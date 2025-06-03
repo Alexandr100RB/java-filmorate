@@ -165,13 +165,13 @@ public class FilmDbStorage implements FilmStorage {
 
     @Override
     public void addLikeByUser(Long filmId, Long userId) {
-        String sql = "INSERT INTO likes (user_id, film_id) VALUES (:user_id, :film_id);";
-
-        MapSqlParameterSource parameterSource = new MapSqlParameterSource();
-        parameterSource.addValue("user_id", userId);
-        parameterSource.addValue("film_id", filmId);
-
-        jdbc.update(sql, parameterSource);
+        String checkSql = "SELECT COUNT(*) FROM likes WHERE user_id = :userId AND film_id = :filmId";
+        Map<String, Object> params = Map.of("userId", userId, "filmId", filmId);
+        Integer count = jdbc.queryForObject(checkSql, params, Integer.class);
+        if (count != null && count == 0) {
+            String sql = "INSERT INTO likes (user_id, film_id) VALUES (:userId, :filmId)";
+            jdbc.update(sql, params);
+        }
     }
 
     @Override
@@ -334,7 +334,7 @@ public class FilmDbStorage implements FilmStorage {
         }
 
         return jdbc.query(sql, Map.of("directorId", directorId), (rs, rowNum) -> {
-            Film film = mapRowToFilm(rs, 2); // твой метод маппинга фильма
+            Film film = mapRowToFilm(rs, 2);
             film.setDirectors(loadDirectors(film.getId()));
             return film;
         });

@@ -52,8 +52,11 @@ public class DirectorDbStorage implements DirectorStorage {
 
     @Override
     public void deleteDirectorById(int directorId) {
-        String sqlQuery = "DELETE FROM directors WHERE director_id = :id";
-        jdbc.update(sqlQuery, Map.of("id", directorId));
+        String deleteLinksSql = "DELETE FROM film_directors WHERE director_id = :id";
+        String deleteDirectorSql = "DELETE FROM directors WHERE director_id = :id";
+        Map<String, Object> params = Map.of("id", directorId);
+        jdbc.update(deleteLinksSql, params);
+        jdbc.update(deleteDirectorSql, params);
     }
 
     @Override
