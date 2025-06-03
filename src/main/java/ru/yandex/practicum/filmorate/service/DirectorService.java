@@ -17,6 +17,7 @@ public class DirectorService {
     private final DirectorStorage directorStorage;
 
     public Director create(Director director) {
+        validateDirector(director);
         Director createdDirector = directorStorage.create(director);
         log.info(String.format("Добавлен режиссёр %s", director));
         return createdDirector;
@@ -51,5 +52,11 @@ public class DirectorService {
         }
         directorStorage.deleteDirectorById(directorId);
         log.debug("Режиссёр {} удалён", directorId);
+    }
+
+    private void validateDirector(Director director) {
+        if (director.getName().isBlank()) {
+            throw new ValidationException("Имя режиссёра не может быть пустым: " + director);
+        }
     }
 }
