@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
 
-
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor

@@ -43,7 +43,6 @@ public class FeedDbStorage implements FeedStorage {
         return jdbc.query(sql, new MapSqlParameterSource(Map.of("userId", userId)), this::mapRow);
     }
 
-
     @Override
     public Optional<Long> findOEventTypeIdByName(EventTypes eventType) {
         String sql = "SELECT event_type_id FROM event_types WHERE event_name = :eventType";

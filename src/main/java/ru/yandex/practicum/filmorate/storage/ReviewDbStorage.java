@@ -50,7 +50,7 @@ public class ReviewDbStorage implements ReviewStorage {
 
         int updated = jdbc.update(sql, params);
         if (updated == 0) {
-            throw new DataNotFoundException("Review with id " + review.getReviewId() + " not found");
+            throw new DataNotFoundException("Отзыв с id " + review.getReviewId() + " не найден");
         }
         return findById(review.getReviewId()).orElseThrow();
     }

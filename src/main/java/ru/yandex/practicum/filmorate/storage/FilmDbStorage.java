@@ -257,7 +257,6 @@ public class FilmDbStorage implements FilmStorage {
         return new ArrayList<>(filmMap.values());
     }
 
-
     @Override
     public void removeLike(Long filmId, Long userId) {
         String sql = "DELETE FROM likes WHERE user_id = :user_id AND film_id = :film_id;";
