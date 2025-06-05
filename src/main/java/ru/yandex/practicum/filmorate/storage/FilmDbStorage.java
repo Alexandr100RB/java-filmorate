@@ -52,11 +52,21 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public void setFilmGenres(Long filmId, Set<Genre> genres) {
         jdbc.update("DELETE FROM film_genres WHERE film_id = :filmId", Map.of("filmId", filmId));
-        if (genres != null) {
+
+        if (genres != null && !genres.isEmpty()) {
+            List<Map<String, Object>> batchValues = new ArrayList<>();
+
             for (Genre genre : genres) {
-                jdbc.update("INSERT INTO film_genres (film_id, genre_id) VALUES (:filmId, :genreId)",
-                        Map.of("filmId", filmId, "genreId", genre.getId()));
+                Map<String, Object> paramMap = new HashMap<>();
+                paramMap.put("filmId", filmId);
+                paramMap.put("genreId", genre.getId());
+                batchValues.add(paramMap);
             }
+
+            jdbc.batchUpdate(
+                    "INSERT INTO film_genres (film_id, genre_id) VALUES (:filmId, :genreId)",
+                    batchValues.toArray(new Map[0])
+            );
         }
     }
 
@@ -343,11 +353,21 @@ public class FilmDbStorage implements FilmStorage {
     @Override
     public void setFilmDirectors(long filmId, Set<Director> directors) {
         jdbc.update("DELETE FROM film_directors WHERE film_id = :filmId", Map.of("filmId", filmId));
-        if (directors != null) {
+
+        if (directors != null && !directors.isEmpty()) {
+            List<Map<String, Object>> batchValues = new ArrayList<>();
+
             for (Director director : directors) {
-                jdbc.update("INSERT INTO film_directors (film_id, director_id) VALUES (:filmId, :directorId)",
-                        Map.of("filmId", filmId, "directorId", director.getId()));
+                Map<String, Object> paramMap = new HashMap<>();
+                paramMap.put("filmId", filmId);
+                paramMap.put("directorId", director.getId());
+                batchValues.add(paramMap);
             }
+
+            jdbc.batchUpdate(
+                    "INSERT INTO film_directors (film_id, director_id) VALUES (:filmId, :directorId)",
+                    batchValues.toArray(new Map[0])
+            );
         }
     }
 

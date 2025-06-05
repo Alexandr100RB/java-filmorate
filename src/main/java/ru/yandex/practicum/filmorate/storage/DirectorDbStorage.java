@@ -42,15 +42,6 @@ public class DirectorDbStorage implements DirectorStorage {
     }
 
     @Override
-    public boolean areDirectorsExist(List<Integer> directorId) {
-        int directorIdsSize = directorId.size();
-        if (directorIdsSize == 0) return true;
-        String sqlQuery = "SELECT COUNT(*) FROM directors WHERE director_id IN (:director_id);";
-        return directorIdsSize ==
-                jdbc.queryForObject(sqlQuery, new MapSqlParameterSource("director_id", directorId), Integer.class);
-    }
-
-    @Override
     public void deleteDirectorById(int directorId) {
         String deleteLinksSql = "DELETE FROM film_directors WHERE director_id = :id";
         String deleteDirectorSql = "DELETE FROM directors WHERE director_id = :id";

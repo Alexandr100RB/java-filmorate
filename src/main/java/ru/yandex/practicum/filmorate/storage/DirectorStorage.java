@@ -12,8 +12,6 @@ public interface DirectorStorage {
 
     boolean isDirectorExists(Integer directorId);
 
-    boolean areDirectorsExist(List<Integer> directorIds);
-
     void deleteDirectorById(int directorId);
 
     Director create(Director director);

@@ -40,7 +40,7 @@ public class FeedDbStorage implements FeedStorage {
         String sql = "SELECT * FROM feeds AS f JOIN event_types AS t ON f.event_type_id = t.event_type_id " +
                 "JOIN operations_types AS o ON f.operation_type_id = o.operation_type_id WHERE user_id = :userId";
 
-        return jdbc.query(sql, new MapSqlParameterSource(Map.of("userId", userId)), this::mapRow);
+        return jdbc.query(sql, new MapSqlParameterSource(Map.of("userId", userId)), this::mapRowToFeed);
     }
 
     @Override
@@ -68,7 +68,7 @@ public class FeedDbStorage implements FeedStorage {
         }
     }
 
-    public Feed mapRow(ResultSet rs, int rowNum) throws SQLException {
+    private Feed mapRowToFeed(ResultSet rs, int rowNum) throws SQLException {
         Long eventId = rs.getLong("event_id");
         Long userId = rs.getLong("user_id");
         Long entityId = rs.getLong("entity_id");
@@ -76,6 +76,7 @@ public class FeedDbStorage implements FeedStorage {
         String eventType = rs.getString("event_name");
         String operation = rs.getString("operation_name");
 
-        return new Feed(eventId, userId, entityId, EventTypes.valueOf(eventType), OperationTypes.valueOf(operation), timestamp);
+        return new Feed(eventId, userId, entityId, EventTypes.valueOf(eventType),
+                OperationTypes.valueOf(operation), timestamp);
     }
 }
