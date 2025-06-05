@@ -12,6 +12,7 @@ import ru.yandex.practicum.filmorate.model.Genre;
 
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Like;
+import ru.yandex.practicum.filmorate.model.Mpa;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -19,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -33,19 +35,17 @@ import java.util.Set;
 @Slf4j
 public class FilmDbStorage implements FilmStorage {
     private final NamedParameterJdbcOperations jdbc;
-    private final MpaStorage mpaStorage;
 
-    private Film mapRowToFilm(ResultSet resultSet, int rowNum) throws SQLException {
-        Long id = resultSet.getLong("film_id");
+    private Film mapRowToFilm(ResultSet rs, int rowNum) throws SQLException {
         Film film = new Film();
-        film.setId(id);
-        film.setName(resultSet.getString("name"));
-        film.setDescription(resultSet.getString("description"));
-        film.setReleaseDate(resultSet.getDate("release_date").toLocalDate());
-        film.setDuration(resultSet.getInt("duration"));
-        film.setMpa(mpaStorage.getMpaById(resultSet.getInt("rating_id")));
-        film.setDirectors(loadDirectors(id));
-        film.setGenres(loadGenres(id));
+        film.setId(rs.getLong("film_id"));
+        film.setName(rs.getString("name"));
+        film.setDescription(rs.getString("description"));
+        film.setReleaseDate(rs.getDate("release_date").toLocalDate());
+        film.setDuration(rs.getInt("duration"));
+        film.setMpa(getMpa(rs.getInt("rating_id")));  // Получаем Mpa отдельным запросом
+        film.setGenres(loadGenres(film.getId()));    // Ваши методы загрузки жанров
+        film.setDirectors(loadDirectors(film.getId())); // Ваши методы загрузки режиссеров
         return film;
     }
 
@@ -255,7 +255,6 @@ public class FilmDbStorage implements FilmStorage {
             return film;
         });
 
-        // Убираем дубликаты по film_id и объединяем жанры
         Map<Long, Film> filmMap = new LinkedHashMap<>();
         for (Film film : filmsWithGenres) {
             filmMap.merge(film.getId(), film, (existing, current) -> {
@@ -437,5 +436,44 @@ public class FilmDbStorage implements FilmStorage {
 
         List<Film> films = jdbc.query(sql.toString(), params, this::mapRowToFilm);
         return films;
+    }
+
+    private Mpa getMpa(int mpaId) {
+        String sql = "SELECT rating_id, name FROM mpa_rating WHERE rating_id = :id";
+        Map<String, Object> params = Map.of("id", mpaId);
+        return jdbc.queryForObject(sql, params, (rs, rowNum) ->
+                new Mpa(rs.getInt("rating_id"), rs.getString("name"))
+        );
+    }
+
+    public List<Film> findFilmsByIds(Collection<Long> filmIds) {
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        String sql = "SELECT f.*, mpa.name AS mpa_rating_name, genres.genre_id, genres.name AS genre_name " +
+                "FROM films AS f " +
+                "LEFT JOIN mpa_rating AS mpa ON f.rating_id = mpa.rating_id " +
+                "LEFT JOIN film_genres AS fg ON f.film_id = fg.film_id " +
+                "LEFT JOIN genres ON fg.genre_id = genres.genre_id " +
+                "WHERE f.film_id IN (:filmIds)";
+        Map<String, Object> params = Map.of("filmIds", filmIds);
+
+        // Собираем фильмы с жанрами (аналогично findAll)
+        return jdbc.query(sql, params, rs -> {
+            Map<Long, Film> filmMap = new LinkedHashMap<>();
+            while (rs.next()) {
+                long filmId = rs.getLong("film_id");
+                Film film = filmMap.get(filmId);
+                if (film == null) {
+                    film = mapRowToFilm(rs, rs.getRow());
+                    filmMap.put(filmId, film);
+                }
+                Integer genreId = rs.getInt("genre_id");
+                if (!rs.wasNull()) {
+                    film.getGenres().add(new Genre(genreId, rs.getString("genre_name")));
+                }
+            }
+            return new ArrayList<>(filmMap.values());
+        });
     }
 }
