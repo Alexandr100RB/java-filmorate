@@ -46,4 +46,6 @@ public interface FilmStorage {
     Set<Genre> loadGenres(Long filmId);
 
     List<Film> search(String query, String by);
+
+    List<Film> findFilmsByIds(Collection<Long> filmIds);
 }

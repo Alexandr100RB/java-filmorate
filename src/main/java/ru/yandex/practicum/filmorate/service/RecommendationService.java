@@ -9,6 +9,8 @@ import ru.yandex.practicum.filmorate.storage.FilmDbStorage;
 import ru.yandex.practicum.filmorate.storage.FilmStorage;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -81,14 +83,27 @@ public class RecommendationService {
     }
 
     private List<Film> getRecommendedFilms(HashMap<Long, Integer> filmsRate) {
-        List<Film> films = new ArrayList<>();
-        while (!filmsRate.isEmpty()) {
-            Long flmId = Collections.max(filmsRate.entrySet(), Map.Entry.comparingByValue()).getKey();
-            Film film = filmDbStorage.findFilmById(flmId);
-            films.add(film);
-            filmsRate.remove(flmId);
+        if (filmsRate.isEmpty()) {
+            return new ArrayList<>();
         }
+        // Сортируем ID фильмов по рейтингу
+        List<Long> sortedFilmIds = filmsRate.entrySet().stream()
+                .sorted(Map.Entry.<Long, Integer>comparingByValue().reversed())
+                .map(Map.Entry::getKey)
+                .collect(Collectors.toList());
 
-        return films;
+        // Получаем фильмы одним запросом
+        List<Film> films = filmDbStorage.findFilmsByIds(sortedFilmIds);
+
+        // Сохраняем порядок сортировки
+        Map<Long, Film> filmById = films.stream()
+                .collect(Collectors.toMap(Film::getId, Function.identity()));
+
+        List<Film> sortedFilms = sortedFilmIds.stream()
+                .map(filmById::get)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        return sortedFilms;
     }
 }
