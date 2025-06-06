@@ -3,8 +3,10 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.yandex.practicum.filmorate.exceptions.ValidationException;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
 import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
+import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.storage.UserStorage;
 
@@ -16,6 +18,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class UserService {
     private final UserStorage userStorage;
+    private final FeedService feedService;
 
     public Collection<User> findAll() {
         return userStorage.findAll();
@@ -67,6 +70,7 @@ public class UserService {
             throw new DataNotFoundException("Друг с id " + id + "не найден");
         }
         userStorage.addFriend(id, friendId);
+        feedService.addFeed(id, friendId, EventTypes.FRIEND, OperationTypes.ADD);
         log.debug("Пользователь {} добавил в друзья пользователя {}", id, friendId);
     }
 
@@ -78,6 +82,7 @@ public class UserService {
             throw new DataNotFoundException("Друг с id " + id + "мне найден");
         }
         userStorage.deleteFriend(id, friendId);
+        feedService.addFeed(id, friendId, EventTypes.FRIEND, OperationTypes.REMOVE);
         log.debug("Пользователь {} удалил из друзей пользователя {}", id, friendId);
     }
 
@@ -113,5 +118,13 @@ public class UserService {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
         }
+    }
+
+    public void deleteUserById(Long id) {
+        if (!userStorage.isUserExists(id)) {
+            throw new DataNotFoundException("Пользователь с id " + id + "не найден");
+        }
+        userStorage.deleteUserById(id);
+        log.debug("Пользователь {} удалён", id);
     }
 }

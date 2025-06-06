@@ -7,13 +7,13 @@ import ru.yandex.practicum.filmorate.exceptions.DataNotFoundException;
 import ru.yandex.practicum.filmorate.exceptions.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.storage.FilmStorage;
-import ru.yandex.practicum.filmorate.storage.GenreStorage;
-import ru.yandex.practicum.filmorate.storage.MpaStorage;
-import ru.yandex.practicum.filmorate.storage.UserStorage;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.storage.*;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,8 +22,10 @@ import java.util.stream.Collectors;
 public class FilmService {
     private final FilmStorage filmStorage;
     private final UserStorage userStorage;
+    private final DirectorDbStorage directorDbStorage;
     private final MpaStorage mpaStorage;
     private final GenreStorage genreStorage;
+    private final FeedService feedService;
 
     public Collection<Film> findAll() {
         return filmStorage.findAll();
@@ -43,7 +45,7 @@ public class FilmService {
         }
         Film createdFilm = filmStorage.create(film);
         log.info("Фильм {} создан", createdFilm);
-        return createdFilm;
+        return filmStorage.findFilmById(createdFilm.getId());
     }
 
     public Film update(Film newFilm) {
@@ -84,6 +86,7 @@ public class FilmService {
             throw new DataNotFoundException("Пользователь с id " + userId + "не найден");
         }
         filmStorage.addLikeByUser(filmId, userId);
+        feedService.addFeed(userId, filmId, EventTypes.LIKE, OperationTypes.ADD);
         log.debug("Пользователь {} поставил лайк фильму {}", userId, filmId);
     }
 
@@ -95,13 +98,26 @@ public class FilmService {
             throw new DataNotFoundException("Пользователь с id " + userId + " не найден");
         }
         filmStorage.removeLike(filmId, userId);
+        feedService.addFeed(userId, filmId, EventTypes.LIKE, OperationTypes.REMOVE);
         log.debug("Пользователь {} убрал лайк у фильма {}", userId, filmId);
+    }
+
+    public void deleteFilmById(Long id) {
+        if (!filmStorage.isFilmExists(id)) {
+            throw new DataNotFoundException("Фильм с id " + id + " не найден");
+        }
+        filmStorage.deleteFilmById(id);
+        log.debug("Фильм {} удалён", id);
     }
 
 
     public Collection<Film> getPopularFilms(Integer sizeOfList) {
         return filmStorage.getPopularFilms(sizeOfList);
     }
+
+    public List<Film> getMostPopularFilms(Integer count, Integer genreId, Integer year) {
+        return filmStorage.getMostPopularFilms(count, genreId, year);
+       }
 
     private void validateFilm(Film film) {
         if (film.getName() == null || film.getName().isBlank()) {
@@ -120,4 +136,24 @@ public class FilmService {
             throw new ValidationException("Продолжительность фильма не может быть меньше нуля: " + film);
         }
     }
+
+    public Collection<Film> getFilmsByDirectorSorted(int directorId, String sortBy) {
+        if (!sortBy.equals("year") && !sortBy.equals("likes")) {
+            throw new ValidationException("Параметр sortBy должен быть 'year' или 'likes', но получен: " + sortBy);
+        }
+        if (!directorDbStorage.isDirectorExists(directorId)) {
+            throw new DataNotFoundException("Режиссер с id " + directorId + " не найден");
+        }
+
+        return filmStorage.getFilmsByDirectorSorted(directorId, sortBy);
+    }
+
+    public List<Film> search(String query, String by) {
+        return filmStorage.search(query, by);
+    }
+
+    public List<Film> getCommonFilms(Integer userId, Integer friendId) {
+        return filmStorage.getCommonFilms(userId, friendId);
+    }
+
 }
